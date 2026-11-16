@@ -1,0 +1,17 @@
+# Yocto build artifacts
+build/
+tmp/
+sstate-cache/
+downloads/
+*.rpm
+*.wic
+*.wic.*
+*.tar.gz
+
+# Local environment
+.env
+*.log
+__pycache__/
+
+# Generated binary releases
+releases/

@@ -1,0 +1,14 @@
+Subject: [PATCH] blink: remove unused ELOC_PROTO mnemonic
+Upstream-Status: Inappropriate [legacy Chromium 117 compatibility]
+
+--- a/third_party/blink/renderer/core/BUILD.gn
++++ b/third_party/blink/renderer/core/BUILD.gn
+@@ -1695,8 +1695,6 @@
+   python_path_proto = "${python_path_root}/third_party/blink/renderer/core/lcp_critical_path_predictor"
+ 
+ 
+-  mnemonic = "ELOC_PROTO"
+-
+   source_dir = "lcp_critical_path_predictor/test_proto"
+   sources = rebase_path([ "lcp_image_id.asciipb" ], "", source_dir)
+ 

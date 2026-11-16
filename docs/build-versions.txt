@@ -1,0 +1,31 @@
+Floor Navigator — Chromium Build Baseline
+
+Board: PHYTEC phyBOARD-Pollux i.MX8MP
+MACHINE: phyboard-pollux-imx8mp-3
+DISTRO: ampliphy-vendor-xwayland
+BSP: BSP-Yocto-NXP-i.MX8MP-PD24.1.0
+
+Chromium: 117.0.5938.132
+GPU: Vivante GC7000UL
+Graphics: Weston / Wayland / OpenGL ES 3.1
+
+Chromium GN options:
+  use_imxgpu=true
+  ozone_platform_wayland=true
+  enable_validating_command_decoder=true
+
+Additional runtime libraries:
+  libcxx 18.1.4
+  nss 3.98
+  nspr 4.35
+  libxslt 1.1.39
+
+Status:
+  Chromium browser tested
+  Hardware GPU acceleration verified
+  Chromium sandbox verified
+  Weston panel launcher verified after reboot
+=== UPSTREAM SOURCE REVISIONS ===
+meta-browser: dc31889c0899971def535dc1c040edf18bc16691
+meta-clang: 66414c17ae60e489bef9a97031323e92c247fbe1
+meta-phytec: a7ccca0b9d32de1938c61ecc7ef0984034a805d8
