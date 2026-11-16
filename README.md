@@ -45,3 +45,7 @@ The automated binary installer is still under development.
 Chromium 117 is outdated and should not be used for sensitive
 web browsing. The working sandbox does not replace browser
 security updates.
+
+## Chromium installation guide
+
+[Chromium on PHYTEC Pollux — build, troubleshooting, and installation](docs/chromium-pollux.md)
