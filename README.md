@@ -41,6 +41,8 @@ The *local development workspace* is kept outside Git tracking: `~/floor_navigat
 
 ## Documentation
 
+Start with the [documentation index](docs/README.md) for installation guides, verification, and reference material.
+
 - [Chromium build, installation and troubleshooting](docs/chromium-pollux.md)
 - [Chromium release notes](docs/chromium-release-notes.md) and [source provenance](docs/chromium-source-provenance.md)
 - [Geany 1.38 build and installation](docs/geany-pollux.md)

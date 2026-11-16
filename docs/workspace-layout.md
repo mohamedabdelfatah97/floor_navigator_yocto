@@ -1,52 +1,97 @@
-# Floor Navigator Yocto workspace layout
+# Yocto workspace setup — Floor Navigator
 
-The developer's working environment was consolidated on 16 November 2026 without moving the large Yocto build directory. The paths below describe that local workspace; they are **examples**, not portable build requirements.
+> **Status:** Local workspace layout verified; the configured BitBake build recognizes the relocated `meta-floor-nav` layer.
+
+## Overview
+
+The project has one parent directory for the PHYTEC BSP, Yocto build output, and Git repository. The large existing build was left in place to preserve paths embedded in Yocto artifacts. Paths below describe the development host, not a portable requirement for other machines.
+
+## Workspace layout
 
 ```text
 ~/floor_navigator_yocto/
-├── build/                          # Existing PHYTEC BitBake build; not tracked by Git
+├── build/                          # Existing PHYTEC BitBake build (not in Git)
 ├── buildtools/                     # BSP/Yocto host tools
-├── sources/                        # Poky, PHYTEC and upstream OE layers
-├── tools/                          # BSP tools
+├── sources/                        # Poky, PHYTEC, upstream OpenEmbedded layers
+├── tools/                          # BSP utilities
 ├── .repo/                          # BSP repo manifest metadata
 └── github/
-    └── floor_navigator_yocto/      # This Git checkout
-        ├── board/
-        ├── docs/
-        ├── meta-floor-nav/
-        ├── scripts/
-        ├── local/                  # Ignored local logs/backups/runtime bundles
+    └── floor_navigator_yocto/      # Git checkout
+        ├── board/                  # Weston launchers, MIME/menu configuration
+        ├── docs/                   # Guides and provenance
+        ├── meta-floor-nav/         # Custom Yocto layer
+        ├── scripts/                # Build/deployment helpers
+        ├── local/                  # Ignored logs, backups, local runtime bundles
         └── releases/               # Ignored generated release archives
 ```
 
-Previously the Git checkout was under `~/projects/floor_navigator_yocto`. It was moved to `~/floor_navigator_yocto/github/floor_navigator_yocto`; the only known necessary BitBake configuration change was updating the `meta-floor-nav` entry in `build/conf/bblayers.conf`. `OEROOT` and `TMPDIR` were not relocated.
+The checkout previously lived at `~/projects/floor_navigator_yocto`. After relocation, the corresponding `meta-floor-nav` entry in `build/conf/bblayers.conf` was updated. `OEROOT`, `TMPDIR`, and the large BSP build were **not** moved.
 
-After the move, `bitbake-layers show-layers` confirmed:
+## Prerequisites
 
-```text
-meta-floor-nav  ~/floor_navigator_yocto/github/floor_navigator_yocto/meta-floor-nav
-```
+- A configured, matching PHYTEC Yocto BSP and build-tools environment.
+- A Git checkout at the path shown above, or updated layer references if using a different path.
+- Enough available disk space for the existing BSP build and downloads.
 
-## Using the workspace
+## Setup and daily use
+
+### Open the Git checkout
 
 ```bash
-# Work on the Git repository:
 cd ~/floor_navigator_yocto/github/floor_navigator_yocto
 git status -sb
-
-# Enter the existing BSP build environment:
-cd ~/floor_navigator_yocto
-source sources/poky/oe-init-build-env build
-bitbake-layers show-layers
 ```
 
-If required in a fresh shell, first initialize the PHYTEC buildtools environment per the BSP documentation. The existing build configuration identifies the target machine and distro.
+### Enter the existing Yocto build environment
 
-## Rules for future work
+```bash
+cd ~/floor_navigator_yocto
+source buildtools/environment-setup-x86_64-pokysdk-linux
+source sources/poky/oe-init-build-env build
+```
 
-- Keep the **large existing `build/` and `sources/` trees in place**. Yocto build artifacts can embed absolute paths; moving them is not equivalent to relocating the Git checkout.
-- Keep board configuration files and source patches under this Git repository; do not commit the entire BSP checkout.
-- Keep local logs, tarballs, RPMs and backups under ignored `local/` or `releases/`; publishing third-party binaries requires a separate license review.
-- Don't add passwords, SSH private keys, credentials or vendor-restricted files to Git.
-- Validate with `bitbake-layers show-layers` after changing any layer path.
-- The workspace being consolidated does **not** by itself mean the board image is reproducible from this one repository.
+### Check the custom layer
+
+```bash
+bitbake-layers show-layers | grep meta-floor-nav
+```
+
+The verified layer entry resolves to:
+
+```text
+~/floor_navigator_yocto/github/floor_navigator_yocto/meta-floor-nav
+```
+
+When preparing a *new* BSP workspace, follow PHYTEC's initialization instructions and add the layer only if it isn't already present:
+
+```bash
+bitbake-layers add-layer \
+  "$HOME/floor_navigator_yocto/github/floor_navigator_yocto/meta-floor-nav"
+```
+
+## Verification
+
+Check that `git status -sb` works in the repository and `bitbake-layers show-layers` resolves `meta-floor-nav` at its current location. These checks establish a valid checkout and layer configuration, not a fully reproducible board image.
+
+## Troubleshooting
+
+| Symptom | Likely cause | Action |
+| --- | --- | --- |
+| Missing `meta-floor-nav` after moving the checkout | Old absolute path remains in `bblayers.conf`. | Review and correct only the affected layer entry; keep a backup of the original config. |
+| `bitbake-layers` command unavailable | Yocto build environment not initialized. | Source the host buildtools environment and `oe-init-build-env` from the BSP workspace. |
+| Git status shows huge archives or build files | Build output accidentally copied into the checkout. | Keep build products under ignored `local/`, `releases/`, or the existing BSP build tree. |
+
+## Limitations and safety
+
+- Do not casually move the existing `build/` or `sources/` trees: generated build files can embed absolute paths.
+- Keep the BSP checkout and local binary artifacts out of Git; inspect license obligations before publishing third-party binaries.
+- Never commit passwords, SSH keys, secrets, vendor-restricted files, or large build products.
+- Avoid running a second BitBake build while the first is active.
+- Organizing the workspace does not automatically make the target image reproducible.
+
+## Related documentation
+
+- [Documentation index](README.md)
+- [Chromium installation](chromium-pollux.md)
+- [Geany installation](geany-pollux.md)
+- [PCManFM integration](pcmanfm-pollux.md)

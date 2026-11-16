@@ -1,165 +1,209 @@
-# PCManFM 1.3.2 — PHYTEC Pollux i.MX8MP
+# PCManFM 1.3.2 on PHYTEC phyBOARD-Pollux (i.MX8MP)
 
-## Scope and tested state (16 November 2026)
+> **Status:** Tested on the physical board: Weston launcher, folder browsing, XDG menu generation, and `.txt` → Geany opening work.
+>
+> **Deployment:** **Partial manual installation guide.** The initial `/opt/floor-pcmanfm` runtime assembly and complete dependency closure are not automated in this repository. The commands below complete and verify an already assembled runtime; they do **not** install PCManFM on a fresh image by themselves.
 
-PCManFM 1.3.2 was built using the PHYTEC Yocto environment and deployed as an isolated runtime to the physical board. It runs through **Weston + XWayland**, whereas Geany runs natively using GTK3/Wayland in the separately tested launcher.
+## Overview
 
-**Verified on the physical board:** PCManFM starts from its permanent Weston folder icon after reboot; directories can be browsed; opening `/home/weston/geany-test.txt` launches Geany without closing PCManFM. The installed-applications menu generator recognizes Geany. The initial file-opening crash was fixed.
+PCManFM runs with GTK3's X11 backend under **Weston + XWayland**. Geany separately uses GTK3's native Wayland backend. The integration includes `menu-cache`, `libfm-extra`, an XDG application menu, system-wide text/code MIME defaults, and a persistent Weston folder icon.
 
-**Not yet verified:** a fresh image containing all of these pieces; other code-type double-click behaviors; image/video/PDF handlers, thumbnails, or cleanup of all GTK warnings.
+## Tested environment
 
-| Component | Version or location |
+| Component | Tested configuration |
 | --- | --- |
-| Board | PHYTEC phyBOARD-Pollux i.MX8MP (`phyboard-pollux-imx8mp-3`) |
-| BSP / distro | PD24.1.0 / `ampliphy-vendor-xwayland` |
-| File manager | PCManFM 1.3.2 |
-| Menu cache | menu-cache 1.1.0 |
-| `libfm-extra` | 1.3.2 |
-| Graphical environment | Weston, XWayland, GTK3 with X11 support |
+| Board / machine | PHYTEC phyBOARD-Pollux i.MX8MP / `phyboard-pollux-imx8mp-3` |
+| BSP / distribution | `PD24.1.0` / `ampliphy-vendor-xwayland` |
+| Application | PCManFM 1.3.2 |
+| Supporting packages | menu-cache 1.1.0, `libfm-extra` 1.3.2 |
+| Graphical session | Weston, XWayland, GTK3 built with X11 support |
 | Isolated runtime | `/opt/floor-pcmanfm` |
-| Weston launcher | `/usr/local/bin/floor-pcmanfm` |
+| Panel launcher | `/usr/local/bin/floor-pcmanfm` |
 | Menu definition | `/etc/xdg/menus/lxde-applications.menu` |
 | System MIME defaults | `/etc/xdg/mimeapps.list` |
 
-## 1. Build and runtime arrangement
+## Prerequisites
 
-In the matching configured PHYTEC Yocto build environment, `bitbake pcmanfm` was run. The `meta-floor-nav/recipes-gnome/gtk+/gtk+3_%.bbappend` adds X11 to GTK3's `PACKAGECONFIG`; Wayland continues to serve other applications. The isolated runtime contains the PCManFM binary and its supporting libraries/resources (under `/opt/floor-pcmanfm/usr/`).
+- Matching PHYTEC Yocto workspace with this repository's `meta-floor-nav` layer enabled.
+- A **previously assembled and deployed** runtime containing `/opt/floor-pcmanfm/usr/bin/pcmanfm` and its supporting GTK3/libfm resources. The original assembled bundle is not distributed by this Git repository.
+- Build artifacts for `pcmanfm`, `menu-cache`, and `libfm-extra` from the matching target build.
+- SSH access to the Pollux Weston image. The commands use `root@172.16.0.193` as the example address.
 
-The *original PCManFM runtime assembly and all of its dependency closure are not automated in this repository*. Previously assembled bundles exist only in ignored local artifacts. **Do not assume the following steps alone install PCManFM on a fresh board**; they document and validate the subsequent fixes on the tested board.
-
-Selected paths on the board:
-
-```text
-/opt/floor-pcmanfm/usr/bin/pcmanfm
-/opt/floor-pcmanfm/usr/lib/libmenu-cache.so.3
-/opt/floor-pcmanfm/usr/lib/libfm-extra.so.4
-/usr/libexec/menu-cache/menu-cached
-/usr/libexec/menu-cache/menu-cache-gen
-/usr/local/bin/floor-pcmanfm
-/usr/local/share/floor-nav/icons/floor-pcmanfm.png
-/etc/xdg/menus/lxde-applications.menu
-/etc/xdg/mimeapps.list
-```
-
-For the isolated installation, resource links were also created when the target paths did not already exist:
+The tested runtime also used these resource links when the target paths did not already exist:
 
 ```text
 /usr/share/pcmanfm -> /opt/floor-pcmanfm/usr/share/pcmanfm
 /usr/share/libfm   -> /opt/floor-pcmanfm/usr/share/libfm
 ```
 
-These are board-side changes, not a claim that the custom layer already installs them.
+## Installation
 
-## 2. Why opening files initially crashed
+### Step 1 — Build the target packages
 
-Initially, directory navigation worked but opening a source/text file terminated PCManFM. The launcher log contained:
-
-```text
-Menu-Cache-ERROR **: failed to find menu-cached
-=== PCManFM exited with code 133 ===
-```
-
-The `menu-cached` and `menu-cache-gen` ARM64 executables were already available in the Yocto `packages-split` output for `menu-cache/1.1.0`, but missing from the board. They were installed under `/usr/libexec/menu-cache/`. A later standalone `menu-cache-gen` diagnostic failed because `libfm-extra.so.4` was also absent. The matching ARM64 `libfm-extra.so.4` from `libfm-extra/1.3.2/packages-split` was added to `/opt/floor-pcmanfm/usr/lib`.
-
-A reproducible deployment should install the appropriate Yocto runtime packages and dependencies rather than copying hand-picked ELF files without checking the full dependency closure.
-
-### Diagnostic commands (existing build workspace)
-
-On the Ubuntu host:
+The repository's [`gtk+3_%.bbappend`](../meta-floor-nav/recipes-gnome/gtk+/gtk+3_%.bbappend) enables GTK3's X11 backend while preserving the existing Wayland backend.
 
 ```bash
 WS="$HOME/floor_navigator_yocto"
-find "$WS/build/tmp-ampliphy-vendor-xwayland/work/cortexa53-crypto-phytec-linux"   -path '*/packages-split/*/usr/libexec/menu-cache/menu-cached' -o   -path '*/packages-split/*/usr/lib/libfm-extra.so.4'
+cd "$WS"
+source buildtools/environment-setup-x86_64-pokysdk-linux
+source sources/poky/oe-init-build-env build
+
+bitbake pcmanfm menu-cache libfm-extra
 ```
 
-On the board:
+Building these recipes does **not** place the runtime on the existing board. The original PCManFM executable, libraries, and supporting resources were assembled manually into `/opt/floor-pcmanfm/usr/`; the full packaging/deployment procedure has not yet been captured as a reproducible script.
 
-```sh
-ls -l /usr/libexec/menu-cache/menu-cached       /usr/libexec/menu-cache/menu-cache-gen       /opt/floor-pcmanfm/usr/lib/libfm-extra.so.4
+### Step 2 — Confirm the previously deployed runtime
+
+```bash
+BOARD=root@172.16.0.193  # Replace if needed
+ssh "$BOARD" 'test -x /opt/floor-pcmanfm/usr/bin/pcmanfm && \
+  ls -l /opt/floor-pcmanfm/usr/bin/pcmanfm'
 ```
 
-## 3. Application discovery (XDG menu)
+**If this check fails, stop here.** Do not run the later steps expecting them to create the missing runtime. Packaging PCManFM and its full runtime dependencies into Yocto is future work.
 
-The application chooser originally showed an empty *Installed Applications* list although `/usr/share/applications/geany.desktop` existed. The repository now includes:
+### Step 3 — Install the missing menu-cache executables and libfm-extra
 
-```text
-board/pollux/menus/lxde-applications.menu
-board/pollux/floor-pcmanfm
+The original crash was caused by absent `menu-cached`/`menu-cache-gen` executables. A subsequent menu-generation test exposed a missing `libfm-extra.so.4`. These were recovered from the existing Yocto `packages-split` build output:
+
+```bash
+WS="$HOME/floor_navigator_yocto"
+BOARD=root@172.16.0.193
+PKG="$WS/build/tmp-ampliphy-vendor-xwayland/work/cortexa53-crypto-phytec-linux"
+MC="$PKG/menu-cache/1.1.0/packages-split/menu-cache/usr/libexec/menu-cache"
+FM="$PKG/libfm-extra/1.3.2/packages-split/libfm-extra/usr/lib/libfm-extra.so.4"
+
+ls -l "$MC/menu-cached" "$MC/menu-cache-gen" "$FM"
+scp "$MC/menu-cached" "$MC/menu-cache-gen" "$FM" "$BOARD:/tmp/"
+
+ssh "$BOARD" 'sh -s' <<'BOARD'
+set -eu
+install -d -m 755 /usr/libexec/menu-cache /opt/floor-pcmanfm/usr/lib
+install -m 755 /tmp/menu-cached /usr/libexec/menu-cache/menu-cached
+install -m 755 /tmp/menu-cache-gen /usr/libexec/menu-cache/menu-cache-gen
+install -m 755 /tmp/libfm-extra.so.4 /opt/floor-pcmanfm/usr/lib/libfm-extra.so.4
+
+for name in pcmanfm libfm; do
+  source="/opt/floor-pcmanfm/usr/share/$name"
+  target="/usr/share/$name"
+  if [ -d "$source" ] && [ ! -e "$target" ] && [ ! -L "$target" ]; then
+    ln -s "$source" "$target"
+  fi
+done
+BOARD
 ```
 
-The installed menu is `/etc/xdg/menus/lxde-applications.menu`. The PCManFM launcher exports:
+These commands are a record of a **verified dependency repair**, not a substitute for package-managed deployment. Check the AArch64 architecture and dynamic dependencies when using build artifacts from another workspace.
 
-```sh
-export XDG_MENU_PREFIX=lxde-
-export XDG_CURRENT_DESKTOP=LXDE
-export XDG_DATA_DIRS=/opt/floor-pcmanfm/usr/share:/usr/local/share:/usr/share
-export XDG_CONFIG_DIRS=/opt/floor-pcmanfm/etc/xdg:/etc/xdg
-export LD_LIBRARY_PATH=/opt/floor-pcmanfm/usr/lib
+### Step 4 — Install the launcher, menu, icon, and system MIME defaults
+
+From the Git checkout:
+
+```bash
+REPO="$HOME/floor_navigator_yocto/github/floor_navigator_yocto"
+BOARD=root@172.16.0.193
+cd "$REPO"
+
+scp \
+  board/pollux/floor-pcmanfm \
+  board/pollux/icons/floor-pcmanfm.png \
+  board/pollux/menus/lxde-applications.menu \
+  board/pollux/mimeapps.list \
+  "$BOARD:/tmp/"
+
+ssh "$BOARD" 'sh -s' <<'BOARD'
+set -eu
+CFG=/etc/xdg/weston/weston.ini
+LAUNCHER=/usr/local/bin/floor-pcmanfm
+ICON=/usr/local/share/floor-nav/icons/floor-pcmanfm.png
+
+[ -e "$CFG.backup-before-pcmanfm" ] || cp -a "$CFG" "$CFG.backup-before-pcmanfm"
+[ ! -f /etc/xdg/mimeapps.list ] || [ -e /etc/xdg/mimeapps.list.pre-floor-nav ] || \
+  cp -a /etc/xdg/mimeapps.list /etc/xdg/mimeapps.list.pre-floor-nav
+
+install -d -m 755 /usr/local/bin /usr/local/share/floor-nav/icons /etc/xdg/menus
+install -m 755 /tmp/floor-pcmanfm "$LAUNCHER"
+install -m 644 /tmp/floor-pcmanfm.png "$ICON"
+install -m 644 /tmp/lxde-applications.menu /etc/xdg/menus/lxde-applications.menu
+install -m 644 /tmp/mimeapps.list /etc/xdg/mimeapps.list
+install -d -o weston -g weston -m 755 /home/weston/Templates
+
+if ! grep -Fq "path=$LAUNCHER" "$CFG"; then
+  printf '\n[launcher]\nicon=%s\ndisplayname=PCManFM\npath=%s\n' \
+    "$ICON" "$LAUNCHER" >> "$CFG"
+fi
+sh -n "$LAUNCHER"
+BOARD
 ```
 
-The generator was verified to create a ~1.1 KB cache containing `geany.desktop` and `geany %F`:
+This is a **system-wide** MIME configuration. It associates common text and source-code types with the existing `geany.desktop`, not with individual filenames. Other applications can be registered through their `.desktop` entries and MIME defaults in future. Back up and merge existing MIME defaults rather than overwriting a customized system configuration without review.
 
-```sh
+### Step 5 — Restart the graphical session
+
+Restart Weston or reboot the board after changing its `[launcher]` entries. The icon may look larger than the other panel icons; resizing was deferred in the original setup. Do not replace the entire board's `weston.ini` with `board/pollux/weston.ini.reference` without comparing hardware-specific settings.
+
+## Verification
+
+First, check menu generation with the **unprefixed** menu name:
+
+```bash
+ssh root@172.16.0.193 'sh -s' <<'BOARD'
+set -eu
 export HOME=/home/weston
 export LD_LIBRARY_PATH=/opt/floor-pcmanfm/usr/lib
 export XDG_DATA_DIRS=/opt/floor-pcmanfm/usr/share:/usr/local/share:/usr/share
 export XDG_CONFIG_DIRS=/opt/floor-pcmanfm/etc/xdg:/etc/xdg
 export XDG_MENU_PREFIX=lxde-
 export XDG_CURRENT_DESKTOP=LXDE
-/usr/libexec/menu-cache/menu-cache-gen     -v -i applications.menu -o /tmp/floor-menu-test.cache
+
+/usr/libexec/menu-cache/menu-cache-gen \
+  -v -i applications.menu -o /tmp/floor-menu-test.cache
 grep -i geany /tmp/floor-menu-test.cache
+gio mime text/plain
+BOARD
 ```
 
-**Important:** With `XDG_MENU_PREFIX=lxde-`, `-i applications.menu` resolves `lxde-applications.menu`. Passing `-i lxde-applications.menu` causes the incorrect lookup `lxde-lxde-applications.menu`.
+With `XDG_MENU_PREFIX=lxde-`, `-i applications.menu` locates `lxde-applications.menu`. Using `-i lxde-applications.menu` incorrectly searches for `lxde-lxde-applications.menu`.
 
-## 4. System-wide MIME defaults
+Then test on the Pollux display:
 
-`gio info` reported `text/plain` for `geany-test.txt`, but `gio mime` initially found no default application. The repository's `board/pollux/mimeapps.list` was installed as `/etc/xdg/mimeapps.list`, setting Geany defaults/added associations for common text and source-code MIME types.
+1. Open PCManFM from its permanent Weston folder icon.
+2. Browse directories without a crash.
+3. Double-click `/home/weston/geany-test.txt`. Geany should open and PCManFM should stay open.
+4. Confirm the result persists after restarting Weston or rebooting.
 
-A follow-up `gio mime` check returned `geany.desktop` as the default for `text/plain`, `text/x-python`, `application/json`, `text/x-c++src`, `text/x-shellscript`, and `text/markdown`. Double-clicking the `.txt` test file in PCManFM then successfully opened Geany; both applications remained open.
+The tested menu generator produced a cache containing `geany.desktop` and `geany %F`. GIO reported Geany as the default for `text/plain`, `text/x-python`, `application/json`, `text/x-c++src`, `text/x-shellscript`, and `text/markdown`; only the `.txt` double-click test was confirmed end to end.
 
-This is a **system-wide default**, not a hard-coded per-file command. Individual users can still override MIME defaults in their own configuration. Not every file extension has been tested; recognition depends on the shared MIME database.
+Inspect the launcher log if a graphical step fails:
 
-## 5. Weston launcher
-
-The verified PCManFM launcher is tracked at `board/pollux/floor-pcmanfm`, installed on the board as `/usr/local/bin/floor-pcmanfm` (mode 755). It sets the `weston` user's session paths, `DISPLAY=:0`, `GDK_BACKEND=x11` and the isolated library/data paths. It starts PCManFM with `--no-desktop --new-win /home/weston` and appends diagnostic output to `/home/weston/pcmanfm-launch.log`.
-
-The generated 64×64 folder icon is stored at `board/pollux/icons/floor-pcmanfm.png` and installed at `/usr/local/share/floor-nav/icons/floor-pcmanfm.png`.
-
-Weston's `/etc/xdg/weston/weston.ini` contains:
-
-```ini
-[launcher]
-icon=/usr/local/share/floor-nav/icons/floor-pcmanfm.png
-displayname=PCManFM
-path=/usr/local/bin/floor-pcmanfm
+```bash
+ssh root@172.16.0.193 'tail -n 80 /home/weston/pcmanfm-launch.log'
 ```
 
-The icon was verified after reboot. The icon appears somewhat large; resizing is optional and was not performed. Do not overwrite the entire board Weston configuration with the repository's `weston.ini.reference` without checking board-specific sections.
+## Troubleshooting
 
-## 6. Remaining warnings and future work
+| Symptom | Cause or finding | Tested remedy / status |
+| --- | --- | --- |
+| PCManFM exits with code `133` when opening a file | `Menu-Cache-ERROR: failed to find menu-cached`. | Install both matching `menu-cached` and `menu-cache-gen` executables. |
+| `menu-cache-gen` cannot load `libfm-extra.so.4` | Runtime dependency absent from isolated library path. | Install matching `libfm-extra.so.4` under `/opt/floor-pcmanfm/usr/lib` and export `LD_LIBRARY_PATH`. |
+| Menu generator looks for `lxde-lxde-applications.menu` | `XDG_MENU_PREFIX=lxde-` was applied twice. | Pass `-i applications.menu`. |
+| Installed Applications chooser is empty | XDG menu was missing even though `geany.desktop` existed. | Install `lxde-applications.menu` and set the XDG environment in the launcher. |
+| File opens Choose Application instead of Geany | No system-wide default exists for the MIME type. | Install `board/pollux/mimeapps.list` as `/etc/xdg/mimeapps.list`, and verify with `gio mime`. |
+| GTK theme / SVG pixbuf / modules warnings | Minimal GTK/icon modules and loaders are incomplete. | Nonfatal on the tested board; not yet fully resolved. |
 
-Nonfatal messages observed in the launcher log include:
+Nonfatal log messages include `modules directory is not accessible`, deprecated `GtkWidget:focus-padding` / `GtkWidget:focus-line-width`, and a missing Adwaita SVG pixbuf loader.
 
-```text
-modules directory is not accessible
-Gtk-WARNING: GtkWidget:focus-padding is deprecated
-Gtk-WARNING: GtkWidget:focus-line-width is deprecated
-Could not load a pixbuf from .../bullet-symbolic.svg
-```
+## Limitations and security
 
-These are **not yet resolved**. The missing `/home/weston/Templates` directory was created on the tested board. Image/video viewers, media codecs, thumbnailers and PDF/HTML associations are also pending.
+- A full **fresh-board PCManFM installer** and a reproducible image recipe are not yet available.
+- The isolated runtime and selected library fixes were deployed manually; dependencies must be packaged properly before production use.
+- Image/video/PDF viewers, thumbnails, additional MIME handlers, and video decoding are not yet integrated. `feh`, `mpv`, and `desktop-file-utils` recipes exist in the BSP source tree but were not built or validated as applications on the board.
+- GStreamer `playbin` and `waylandsink` were detected; this alone does not prove successful video playback.
+- Remaining GTK/icon warnings and the panel icon sizing are pending cleanup.
 
-Candidate Yocto recipes in the configured BSP include `feh_3.10.2.bb`, `mpv_0.35.1.bb` and `desktop-file-utils_0.27.bb`; their presence in the source tree does not mean those applications are installed or validated on the board. GStreamer `playbin` and `waylandsink` were detected, but actual video playback/decoding has not been tested.
+## Related documentation
 
-## 7. Reproducibility checklist
-
-Before declaring a fresh image equivalent to the tested board:
-
-- Package PCManFM and **all** runtime dependencies through Yocto, including menu-cache, libfm-extra, GTK modules and required icon loaders.
-- Install the resources and system MIME/menu configuration as part of the image.
-- Add appropriate desktop entries for viewers and test their execution in the Weston user session.
-- Re-test PCManFM browsing, Geany file opening, menu population and the Weston icon after reboot.
-- Verify additional file types, video codecs and thumbnails separately.
-
-This document records the *tested manual integration*; it does not claim an automated fresh-image installer is already available.
+- [Geany build and installation](geany-pollux.md)
+- [Chromium build and installation](chromium-pollux.md)
+- [Workspace setup and layout](workspace-layout.md)
