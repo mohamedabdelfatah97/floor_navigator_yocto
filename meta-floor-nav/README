@@ -1,41 +1,54 @@
-This README file contains information on the contents of the meta-floor-nav layer.
+meta-floor-nav — Floor Navigator Yocto layer
+=======================================
 
-Please see the corresponding sections below for details.
+Custom BitBake recipe append files and patches for the PHYTEC phyBOARD-Pollux
+(i.MX8MP) BSP-Yocto-NXP-i.MX8MP-PD24.1.0 development environment.
 
-Dependencies
-============
+Compatibility
+-------------
 
-  URI: <first dependency>
-  branch: <branch name>
+The layer declares compatibility with Yocto Scarthgap in conf/layer.conf.
+It was loaded successfully by BitBake in the PHYTEC BSP workspace using the
+ampliphy-vendor-xwayland distribution and phyboard-pollux-imx8mp-3 machine.
 
-  URI: <second dependency>
-  branch: <branch name>
+Dependencies and scope
+----------------------
 
-  .
-  .
-  .
+* Requires the base Yocto/OE core layer (LAYERDEPENDS in layer.conf).
+* The Chromium bbappend targets the matching chromium-ozone-wayland 117.0.5938.132
+  recipe from the BSP's meta-browser/meta-chromium layer.
+* The gtk+3 bbappend targets the GTK3 recipe used in this BSP and requests X11
+  support for PCManFM alongside the existing Wayland use case.
+* This layer does not yet package the manually deployed PCManFM runtime,
+  menu-cache executables, board desktop launchers, XDG menu or MIME defaults.
 
-Patches
-=======
+Contents
+--------
 
-Please submit any patches against the meta-floor-nav layer to the xxxx mailing list (xxxx@zzzz.org)
-and cc: the maintainer:
+recipes-browser/chromium/
+    Chromium 117 GN/native dependency settings and Blink ELOC_PROTO patch.
 
-Maintainer: XXX YYYYYY <xxx.yyyyyy@zzzzz.com>
+recipes-gnome/gtk+/
+    GTK3 X11 PACKAGECONFIG append used for the XWayland PCManFM setup.
 
-Table of Contents
-=================
+Usage
+-----
 
-  I. Adding the meta-floor-nav layer to your build
- II. Misc
+Configure the matching PHYTEC BSP workspace first, then add the repository layer:
 
+    bitbake-layers add-layer /path/to/floor_navigator_yocto/meta-floor-nav
+    bitbake-layers show-layers
 
-I. Adding the meta-floor-nav layer to your build
-=================================================
+In the current local layout, the repository is located at:
 
-Run 'bitbake-layers add-layer meta-floor-nav'
+    ~/floor_navigator_yocto/github/floor_navigator_yocto
 
-II. Misc
-========
+The full hardware/software procedure is documented in the top-level README and
+in docs/*.md. The current board's complete installed desktop is not yet
+reproduced solely by rebuilding an image from this layer.
 
---- replace with specific information about the meta-floor-nav layer ---
+License
+-------
+
+See COPYING.MIT for the layer's own metadata license. Third-party components
+and any distributed binary archives have separate licensing obligations.

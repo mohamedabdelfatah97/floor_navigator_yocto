@@ -1,4 +1,3 @@
-
 # Geany 1.38 — PHYTEC Pollux i.MX8MP
 
 ## Overview
@@ -175,4 +174,4 @@ prevent operation.
 
 Geany 1.38 is fully operational on the tested physical Pollux.
 
-The next planned graphical application is PCManFM.
+PCManFM 1.3.2 has since been deployed and tested. A text file opened from PCManFM successfully launches Geany, using system-wide MIME defaults. See [PCManFM integration](pcmanfm-pollux.md).
