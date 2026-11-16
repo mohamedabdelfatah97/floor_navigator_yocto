@@ -176,4 +176,3 @@ prevent operation.
 Geany 1.38 is fully operational on the tested physical Pollux.
 
 The next planned graphical application is PCManFM.
-
