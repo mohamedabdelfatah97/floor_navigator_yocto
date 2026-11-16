@@ -1,3 +1,4 @@
+# Reference snapshot only: do not overwrite a live board weston.ini without comparing hardware-specific settings.
 [core]
 #gbm-format=argb8888
 use-g2d=true
@@ -43,6 +44,17 @@ path=/usr/bin/weston-terminal
 command=/usr/bin/weston --backend=rdp-backend.so --shell=fullscreen-shell.so --no-clients-resize
 
 [launcher]
-icon=/opt/floor-chromium-sandbox-test/usr/share/icons/hicolor/32x32/apps/chromium.png
+icon=/opt/floor-chromium/usr/share/icons/hicolor/32x32/apps/chromium.png
 displayname=Chromium
 path=/usr/local/bin/floor-chromium
+
+# Additional verified launcher entries (appended to the running board configuration)
+[launcher]
+icon=/usr/share/icons/hicolor/32x32/apps/geany.png
+displayname=Geany
+path=/usr/local/bin/floor-geany
+
+[launcher]
+icon=/usr/local/share/floor-nav/icons/floor-pcmanfm.png
+displayname=PCManFM
+path=/usr/local/bin/floor-pcmanfm

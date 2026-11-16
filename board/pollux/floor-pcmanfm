@@ -1,0 +1,29 @@
+#!/bin/sh
+
+export HOME=/home/weston
+export XDG_RUNTIME_DIR=/run/user/1000
+export XDG_SESSION_TYPE=wayland
+export WAYLAND_DISPLAY=wayland-1
+export DISPLAY=:0
+export GDK_BACKEND=x11
+export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
+
+export LD_LIBRARY_PATH=/opt/floor-pcmanfm/usr/lib
+export XDG_DATA_DIRS=/opt/floor-pcmanfm/usr/share:/usr/local/share:/usr/share
+export XDG_CONFIG_DIRS=/opt/floor-pcmanfm/etc/xdg:/etc/xdg
+
+export XDG_MENU_PREFIX=lxde-
+export XDG_CURRENT_DESKTOP=LXDE
+
+cd /home/weston || exit 1
+
+LOG=/home/weston/pcmanfm-launch.log
+
+echo "=== PCManFM started $(date -Iseconds) ===" >> "$LOG"
+
+/opt/floor-pcmanfm/usr/bin/pcmanfm \
+    --no-desktop --new-win /home/weston "$@" >> "$LOG" 2>&1
+
+RESULT=$?
+echo "=== PCManFM exited with code $RESULT ===" >> "$LOG"
+exit "$RESULT"

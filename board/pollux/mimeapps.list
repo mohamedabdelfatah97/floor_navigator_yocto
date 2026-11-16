@@ -1,0 +1,27 @@
+[Default Applications]
+text/plain=geany.desktop;
+text/x-python=geany.desktop;
+text/x-csrc=geany.desktop;
+text/x-chdr=geany.desktop;
+text/x-c++src=geany.desktop;
+text/x-c++hdr=geany.desktop;
+text/x-shellscript=geany.desktop;
+application/json=geany.desktop;
+application/xml=geany.desktop;
+text/markdown=geany.desktop;
+text/x-yaml=geany.desktop;
+application/x-yaml=geany.desktop;
+
+[Added Associations]
+text/plain=geany.desktop;
+text/x-python=geany.desktop;
+text/x-csrc=geany.desktop;
+text/x-chdr=geany.desktop;
+text/x-c++src=geany.desktop;
+text/x-c++hdr=geany.desktop;
+text/x-shellscript=geany.desktop;
+application/json=geany.desktop;
+application/xml=geany.desktop;
+text/markdown=geany.desktop;
+text/x-yaml=geany.desktop;
+application/x-yaml=geany.desktop;
