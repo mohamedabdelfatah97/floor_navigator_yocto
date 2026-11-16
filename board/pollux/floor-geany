@@ -1,0 +1,12 @@
+#!/bin/sh
+
+export HOME=/home/weston
+export XDG_RUNTIME_DIR=/run/user/1000
+export WAYLAND_DISPLAY=wayland-1
+export XDG_SESSION_TYPE=wayland
+export GTK_BACKEND=wayland
+export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
+
+cd /home/weston || exit 1
+
+exec /usr/bin/geany "$@"
