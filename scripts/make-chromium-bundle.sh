@@ -66,7 +66,10 @@ echo "=== CREATING DISTRIBUTION ==="
 mkdir -p "$(dirname "$OUT")"
 tar -C "$STAGE" -czf "$OUT" usr
 
-sha256sum "$OUT" > "$OUT.sha256"
+(
+    cd "$(dirname "$OUT")"
+    sha256sum "$(basename "$OUT")" > "$(basename "$OUT").sha256"
+)
 
 echo "=== COMPLETE ==="
 ls -lh "$OUT" "$OUT.sha256"
